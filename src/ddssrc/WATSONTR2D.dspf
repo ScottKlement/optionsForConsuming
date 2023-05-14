@@ -1,0 +1,27 @@
+     A                                      DSPSIZ(24 80 *DS3)
+     A                                      INDARA
+     A          R SCREEN1
+     A                                      CA03(03 'F3=Exit')
+     A                                  1 26'Translate Text with IBM Watson'
+     A                                      DSPATR(HI)
+     A                                  3  1'Languages:'
+     A                                      COLOR(BLU)
+     A            FROMLANG       2A  B  3 12DSPATR(HI)
+     A                                      CHECK(LC)
+     A                                  3 15'to'
+     A            TOLANG         2A  B  3 18DSPATR(HI)
+     A                                      CHECK(LC)
+     A                                  3 24'EN=English ES=Spanish FR=French IT-
+     A                                      =Italian PT=Portuguese'
+     A                                  5  1'From Text:'
+     A                                      COLOR(BLU)
+     A            FROMTEXT     480A  B  6  1DSPATR(PC)
+     A                                      CHECK(LC)
+     A                                 14  1'To Text:'
+     A                                      COLOR(BLU)
+     A            TOTEXT       480   O 15  1
+     A                                 22  1'HTTP Code:'
+     A                                      COLOR(BLU)
+     A            HTTPCODE      69A  O 22 12
+     A                                 24  1'F3=Exit'
+     A                                      COLOR(BLU)

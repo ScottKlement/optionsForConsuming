@@ -1,0 +1,5 @@
+src/rpgleinc/HTTPAPI_H.rpgleinc
+src/rpgleinc/CONFIG_H.rpgleinc
+src/rpgleinc/YAJL_H.rpgleinc
+src/rpgleinc/VERSION.rpgleinc
+tmp
