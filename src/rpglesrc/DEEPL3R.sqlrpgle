@@ -76,7 +76,7 @@ dcl-proc translate;
       return retval;
    endif;
 
-   apiKey = '5ab01ac3-5c64-45ca-8cb1-4754f3f48a4d:fx';
+   apiKey = '** your API key here **';
 
    exec sql values json_object(
                      'header' value 'Authorization,DeepL-Auth-Key ' || :apiKey,
