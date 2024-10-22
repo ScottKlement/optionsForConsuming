@@ -1,16 +1,17 @@
 **free
-//  WATSONTR5R:  This is a demo of Watson's Language Translator V3
-//               using input/output with JSON documents.
+//  DEEPL5R:  This is a demo of using DeepL's Language Translator V2
+//            using input/output with JSON documents.
 //
-//               This version uses the IBM port of AXISC
-//               to implement HTTP.  Db2 JSON_OBJECT to create JSON,
-//               and DATA-INTO/YAJLINTO to read JSON.
+//            This version uses the IBM port of AXISC
+//            to implement HTTP.  Db2 JSON_OBJECT to create JSON,
+//            and DATA-INTO/YAJLINTO to read JSON.
 //
-//               Diagnostic info is written in /tmp/axistransport.log
+//            Diagnostic info is written in /tmp/axistransport.log
 //
-ctl-opt option(*srcstmt) bnddir('AXIS');
-/include version.rpgleinc
 
+ctl-opt option(*srcstmt) bnddir('AXIS');
+
+/copy version.rpgleinc
 /include /QIBM/ProdData/OS/WebServices/V1/client/include/Axis.rpgleinc
 
 dcl-f WATSONTR3D workstn indds(dspf);
@@ -21,8 +22,8 @@ end-Ds;
 
 setJobCcsid();
 
-fromLang = 'en';
-toLang   = 'es';
+fromLang = 'EN';
+toLang   = 'ES';
 
 dou dspf.F3Exit = *on;
 
@@ -31,8 +32,8 @@ dou dspf.F3Exit = *on;
       leave;
    endif;
 
-   fromLang = %lower(fromLang);
-   toLang   = %lower(toLang);
+   fromLang = %upper(fromLang);
+   toLang   = %upper(toLang);
    toText = translate( fromLang: toLang: %trim(fromText) );
 
 enddo;
@@ -60,34 +61,33 @@ dcl-proc translate;
       fromText varchar(1000) const;
    end-pi;
 
-   dcl-s userid     varchar(10);
-   dcl-s password   varchar(200);
-   dcl-s hdr        varchar(200);
+   dcl-s apiKey     varchar(200);
    dcl-s url        varchar(2000);
    dcl-s request    varchar(2000);
    dcl-s response   varchar(5000);
    dcl-s rcvBuf     char(5000);
    dcl-s rc         int(10);
    dcl-s propName   char(200);
-   dcl-s propVal    char(200);
+   dcl-s propVal    char(300);
    dcl-s transportHandle pointer;
    dcl-s certStore  char(200);
    dcl-s setTrue    char(6);
    dcl-s setNone    char(6);
    dcl-s setDefault char(6);
    dcl-s snihost    char(256);
+   dcl-s split      char(1) inz('0');
 
-   dcl-ds result qualified;
-     dcl-ds translations dim(1);
-        translation varchar(1000) inz('');
-     end-ds;
-     word_count int(10) inz(0);
-     character_count int(10) inz(0);
-   end-ds;
+   dcl-ds result qualified;                     // {
+     dcl-ds translations dim(1);                //   "translations": [{
+        detected_source_language varchar(2);    //     "detected_source_language": "EN",
+        text                     varchar(1000); //      "text": "{string}"
+     end-ds;                                    //   }]
+   end-ds;                                      // }
 
    exec sql select json_object(
-                     'source' value :fromLang,
-                     'target' value :toLang,
+                     'source_lang' value :fromLang,
+                     'target_lang' value :toLang,
+                     'split_sentences' value :split,
                      'text' value json_array(:fromText)
                    )
               into :request
@@ -98,16 +98,11 @@ dcl-proc translate;
 
    axiscAxisStartTrace('/tmp/axistransport.log': *NULL);
 
-   userid = 'apikey';
-   password = 'YOUR IBM CLOUD KEY HERE';
+   apiKey = '** your API key here **';
 
-   sniHost = 'api.us-south.language-translator.watson.cloud.ibm.com'
-           + x'00';
+   sniHost = 'api-free.deepl.com' + x'00';
 
-   url = 'https://'
-       + %trimr(sniHost:x'4000')
-       + '/instances/f7b6e575-01c4-4b1b-916a-3a79652d0f52'
-       + '/v3/translate?version=2018-05-01';
+   url = 'https://' + %trimr(sniHost:x'4000') + '/v2/translate';
 
    transportHandle = axiscTransportCreate(url: AXISC_PROTOCOL_HTTP11);
    if (transportHandle = *null);
@@ -119,10 +114,11 @@ dcl-proc translate;
                             : AXISC_PROPERTY_HTTP_METHOD
                             : %addr(propName));
 
-   propName = userid + x'00';
-   propVal  = password + x'00';
+   propName = 'Authorization' + x'00';
+   propVal  = 'DeepL-Auth-Key ' + apiKey + x'00';
+
    axiscTransportSetProperty( transportHandle
-                            : AXISC_PROPERTY_HTTP_BASICAUTH
+                            : AXISC_PROPERTY_HTTP_HEADER
                             : %addr(propName)
                             : %addr(propVal) );
 
@@ -133,6 +129,7 @@ dcl-proc translate;
                             : AXISC_PROPERTY_HTTP_HEADER
                             : %addr(propName)
                             : %addr(propVal) );
+
    setNone    = 'NONE' + x'00';
    setTrue    = 'true' + x'00';
    certStore  = '/QIBM/USERDATA/ICSS/CERT/SERVER/DEFAULT.KDB' + x'00';
@@ -192,7 +189,7 @@ dcl-proc translate;
      data-into result %DATA(response) %PARSER('YAJLINTO');
    endif;
 
-   return result.translations(1).translation;
+   return result.translations(1).text;
 
 end-Proc;
 
@@ -373,3 +370,4 @@ dcl-proc setJobCCSID;
   endif;
 
 end-proc;
+

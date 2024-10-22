@@ -1,18 +1,15 @@
 **free
-
-//  WATSONTR7R:  This is a demo of Watson's Language Translator V3
-//               using input/output with JSON documents.
+//  DEEPL4R:  This is a demo of using DeepL's Language Translator V2
+//            using input/output with JSON documents.
 //
-//               Utilizes the QSYS2 SQL HTTP (HTTP_POST) and Db2 JSON
-//               functions (JSON_OBJECT, JSON_ARRAY, JSON_TABLE)
-//               all in a single statement.
+//            This version uses the (new) SYSTOOLS SQL HTTP interface
+//            with all SQL combined into a single statement
 //
-
 ctl-opt option(*srcstmt);
-/include version.rpgleinc
 
-dcl-f WATSONTR3D workstn indds(dspf);
+/copy version.rpgleinc
 
+dcl-f DEEPL1D workstn indds(dspf);
 
 dcl-Ds dspf qualified;
    F3Exit ind pos(3);
@@ -20,8 +17,8 @@ end-Ds;
 
 setJobCcsid();
 
-fromLang = 'en';
-toLang   = 'es';
+fromLang = 'EN';
+toLang   = 'ES';
 
 dou dspf.F3Exit = *on;
 
@@ -30,10 +27,9 @@ dou dspf.F3Exit = *on;
       leave;
    endif;
 
-   fromLang = %lower(fromLang);
-   toLang   = %lower(toLang);
+   fromLang = %upper(fromLang);
+   toLang   = %upper(toLang);
    toText = translate( fromLang: toLang: %trim(fromText) );
-
 enddo;
 
 *inlr = *on;
@@ -42,7 +38,7 @@ return;
 
 /// +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
 //  translate:
-//   Use IBM Watson's Language Translator API to translate text between
+//   Use DeepL's Language Translator API to translate text between
 //   two human languages.
 //
 //   @param char(2) 2-char language to translate from (en=english)
@@ -60,37 +56,33 @@ dcl-proc translate;
       fromText varchar(1000) const;
    end-pi;
 
-   dcl-s userid   varchar(10);
-   dcl-s password varchar(200);
+   dcl-s apiKey   varchar(200);
    dcl-s url      varchar(2000);
    dcl-s retval   varchar(1000);
+   dcl-s split    char(1) inz('0');
 
-   url = 'https://'
-       + 'api.us-south.language-translator.watson.cloud.ibm.com'
-       + '/instances/f7b6e575-01c4-4b1b-916a-3a79652d0f52'
-       + '/v3/translate?version=2018-05-01';
+   url = 'https://api-free.deepl.com/v2/translate';
+   apiKey = '** your API key here **';
 
-   userid = 'apikey';
-   password = 'YOUR IBM CLOUD KEY HERE';
-
-   exec SQL SELECT J."translation"
+   exec SQL SELECT J."text"
           into :retval
           from JSON_TABLE(
                   HTTP_POST(
                     :url,
                     json_object(
-                      'source' value lower(:fromLang),
-                      'target' value lower(:toLang),
+                      'source_lang' value upper(:fromLang),
+                      'target_lang' value upper(:toLang),
+                      'split_sentences' value :split,
                       'text' value json_array(:fromText)
                     ),
                     json_object(
-                      'basicAuth' value :userid || ',' || :password,
+                      'header' value 'Authorization,DeepL-Auth-Key ' || :apiKey,
                       'header' value 'Content-Type,application/json'
                     )
                   ),
                   'lax $' COLUMNS(
-                    "translation" VARCHAR(1000)
-                      PATH 'lax $.translations[0].translation'
+                    "text" VARCHAR(1000)
+                      PATH 'lax $.translations[0].text'
                   )
                 ) as J;
 
@@ -100,8 +92,7 @@ dcl-proc translate;
    endif;
 
    return retval;
-
-end-proc;
+end-Proc;
 
 
 /// +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
@@ -155,3 +146,4 @@ dcl-proc setJobCCSID;
   endif;
 
 end-proc;
+

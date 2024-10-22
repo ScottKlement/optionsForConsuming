@@ -6,8 +6,8 @@
 SHELL = /usr/bin/qsh
 .SHELLFLAGS = -ec
 
-VERSION        := 0.1
-COPYRIGHT      := Version $(VERSION). Copyright 2001-2023 Scott C. Klement.
+VERSION        := 0.2
+COPYRIGHT      := Version $(VERSION). Copyright 2001-2024 Scott C. Klement.
 LIBRARY				 ?= SKWEBSRV
 YAJLLIB				 ?= YAJL
 HTTPLIB				 ?= LIBHTTP
@@ -65,7 +65,7 @@ $(shell test -d $(CURDIR)/tmp || mkdir $(CURDIR)/tmp; rm $(CURDIR)/tmp/*.txt >/d
 #
 
 ifeq ($(DEBUG), 1)
-	DEBUG_OPTS     := dbgview(*all)
+	DEBUG_OPTS     := dbgview(*list)
 	SQL_DEBUG_OPTS := dbgview(*source)
 	CPP_OPTS       := $(CPP_OPTS) output(*print)
 else
@@ -76,33 +76,28 @@ else
 endif
 
 define TARGET_DSPF
-  WATSONTR1D.file WATSONTR2D.file WATSONTR3D.file 
+  DEEPL1D.file
 endef	
 TARGET_DSPF := $(addprefix $(ILIBRARY)/, $(TARGET_DSPF))
 
 define TARGET_PGMS
-	WATSONTR1R.pgm WATSONTR2R.pgm WATSONTR3R.pgm WATSONTR4R.pgm WATSONTR5R.pgm
-	WATSONTR6R.pgm WATSONTR7R.pgm
+	DEEPL1R.pgm DEEPL2R.pgm DEEPL3R.pgm DEEPL4R.pgm DEEPL5R.pgm
 endef	
 TARGET_PGMS := $(addprefix $(ILIBRARY)/, $(TARGET_PGMS))
 
 TARGETS := $(TARGET_DSPF) $(TARGET_PGMS)
 
-WATSONTR1R.module_deps := src/rpgleinc/VERSION.rpgleinc
-WATSONTR2R.module_deps := src/rpgleinc/VERSION.rpgleinc
-WATSONTR3R.module_deps := src/rpgleinc/VERSION.rpgleinc
-WATSONTR4R.module_deps := src/rpgleinc/VERSION.rpgleinc
-WATSONTR5R.module_deps := src/rpgleinc/VERSION.rpgleinc
-WATSONTR6R.module_deps := src/rpgleinc/VERSION.rpgleinc
-WATSONTR7R.module_deps := src/rpgleinc/VERSION.rpgleinc
+DEEPL1R.module_deps := src/rpgleinc/VERSION.rpgleinc
+DEEPL2R.module_deps := src/rpgleinc/VERSION.rpgleinc
+DEEPL3R.module_deps := src/rpgleinc/VERSION.rpgleinc
+DEEPL4R.module_deps := src/rpgleinc/VERSION.rpgleinc
+DEEPL5R.module_deps := src/rpgleinc/VERSION.rpgleinc
 
-WATSONTR1R.pgm_deps := $(addprefix $(ILIBRARY)/, WATSONTR1R.module WATSONTR1D.file)
-WATSONTR2R.pgm_deps := $(addprefix $(ILIBRARY)/, WATSONTR2R.module WATSONTR2D.file)
-WATSONTR3R.pgm_deps := $(addprefix $(ILIBRARY)/, WATSONTR3R.module WATSONTR3D.file)
-WATSONTR4R.pgm_deps := $(addprefix $(ILIBRARY)/, WATSONTR4R.module WATSONTR3D.file)
-WATSONTR5R.pgm_deps := $(addprefix $(ILIBRARY)/, WATSONTR5R.module WATSONTR3D.file)
-WATSONTR6R.pgm_deps := $(addprefix $(ILIBRARY)/, WATSONTR6R.module WATSONTR3D.file)
-WATSONTR7R.pgm_deps := $(addprefix $(ILIBRARY)/, WATSONTR7R.module WATSONTR3D.file)
+DEEPL1R.pgm_deps := $(addprefix $(ILIBRARY)/, DEEPL1R.module DEEPL1D.file)
+DEEPL2R.pgm_deps := $(addprefix $(ILIBRARY)/, DEEPL2R.module DEEPL1D.file)
+DEEPL3R.pgm_deps := $(addprefix $(ILIBRARY)/, DEEPL3R.module DEEPL1D.file)
+DEEPL4R.pgm_deps := $(addprefix $(ILIBRARY)/, DEEPL4R.module DEEPL1D.file)
+DEEPL5R.pgm_deps := $(addprefix $(ILIBRARY)/, DEEPL5R.module DEEPL1D.file)
 
 .PHONY: all clean
 
@@ -136,7 +131,7 @@ tmp:
 #  Specific rules for objects that don't follow the "cookbook" rules, below.
 #
 
-src/rpgleinc/VERSION.rpgleinc: src/rpgleinc
+src/rpgleinc/VERSION.rpgleinc: src/rpgleinc | tmp
 	@$(info Creating $(@))touch -C 1208 $(LOGFILE)
 	(rm -f '$(@)'
 	touch -C 819 '$(@)'
@@ -169,13 +164,13 @@ $(ILIBRARY)/%.module: src/csrc/%.c $$($$*.module_deps) | $(ILIBRARY)
 	($(SETLIBLIST)
 	system -v "crtcmod module($(LIBRARY)/$(*F)) srcstmf('$(<)') $(CINCDIR) $(C_OPTS) tgtrls($(TGTRLS)) $(DEBUG_OPTS) tgtccsid($(TGTCCSID))") $(OUTPUT)
 	
-$(ILIBRARY)/%.module: src/rpglesrc/%.rpgle $$($$*.module_deps) | $(ISRCFILE)
+$(ILIBRARY)/%.module: src/rpglesrc/%.rpgle $$($$*.module_deps) | $(ISRCFILE) tmp
 	@$(info Creating $(@))touch -C 1208 $(LOGFILE)
 	($(SETLIBLIST)
 	cat '$(<)' | Rfile -wQ '$(SRCFILE2)'
 	system -v "crtrpgmod module($(LIBRARY)/$(*F)) $(SRCFILE) $(RPGINCDIR) $(RPG_OPTS) tgtrls($(TGTRLS)) $(DEBUG_OPTS)") $(OUTPUT)
 	
-$(ILIBRARY)/%.module: src/rpglesrc/%.sqlrpgle $$($$*.module_deps) | $(ISRCFILE)
+$(ILIBRARY)/%.module: src/rpglesrc/%.sqlrpgle $$($$*.module_deps) | $(ISRCFILE) tmp
 	@$(info Creating $(@))touch -C 1208 $(LOGFILE)
 	($(SETLIBLIST)
 	cat '$(<)' | Rfile -wQ '$(SRCFILE2)'
@@ -215,7 +210,7 @@ $(ILIBRARY)/%.srvpgm: src/srvsrc/%.bnd $$($$*.srvpgm_deps) | $(ISRCFILE)
 	system -v "chgobjown obj($(LIBRARY)/$(basename $(@F))) objtype(*$(subst .,,$(suffix $(@F)))) newown($(OWNER)) curownaut(*revoke)"
 	system -v "grtobjaut obj($(LIBRARY)/$(basename $(@F))) objtype(*$(subst .,,$(suffix $(@F)))) user(*public) aut(*use) replace(*yes)") $(OUTPUT)
 
-$(ILIBRARY)/%.file: src/ddssrc/%.dspf | $$($$*.file_deps) $(ISRCFILE)
+$(ILIBRARY)/%.file: src/ddssrc/%.dspf | $$($$*.file_deps) $(ISRCFILE) tmp
 	@$(info Creating $(@))touch -C 1208 $(LOGFILE)
 	(rm -rf '$(@)'
 	cat '$(<)' | Rfile -wQ '$(SRCFILE2)'
